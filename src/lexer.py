@@ -99,14 +99,26 @@ def estadoOperador(linha: str,
                    _tokens_:List[Tuple[str, str, int]] = [], 
                    word: str = "") -> int:
     
-    ...
+    _tokens_.append(("OP", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoDivisao(linha: str, 
                   index: int = 0, 
                   _tokens_:List[Tuple[str, str, int]] = [], 
                   word: str = "") -> int:
     
-    ...
+    # note que todos os operadores são de apenas um caracter, exceto
+    # divisão inteira (//)
+    if index >= len(linha):
+        _tokens_.append(("OP", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index] == '/':
+        _tokens_.append(("OP", word + linha[index], index - len(word)))
+        return estadoEntrada, index+1, _tokens_, ""
+    
+    _tokens_.append(("OP", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
     
 
 def estadoWhiteSpace(linha: str, 
