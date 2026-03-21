@@ -47,7 +47,18 @@ def estadoNumero(linha: str,
                  _tokens_:List[Tuple[str, str, int]] = [], 
                  word: str = "") -> int:
     
-    ...
+    if index >= len(linha): 
+        _tokens_.append(("NUM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index].isdecimal():
+        return estadoNumero, index+1, _tokens_, word + linha[index]
+    
+    if linha[index] == '.':
+        return estadoPonto, index+1, _tokens_, word + linha[index]
+
+    _tokens_.append(("NUM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoPonto(linha: str, 
                 index: int = 0, 
