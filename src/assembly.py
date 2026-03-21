@@ -27,5 +27,19 @@ def lerArquivo():
 
     return linhas
 
-def gerarAssembly():
-    pass
+def _cabecalho(data):
+    linhas = [".global _start", ".data"]
+    linhas.extend(data)
+    linhas += ["", ".text", "_start:"]
+    linhas += ["    @ Habilitar VFP",
+               "    VMRS r0, FPEXC",
+               "    ORR  r0, r0, #0x40000000",
+               "    VMSR FPEXC, r0", ""]
+    return linhas
+
+def _rodape():
+    return ["", "_end:", "    B _end"]
+
+def gerarAssembly(tokens):
+    data, code = [], []
+    return "\n".join(_cabecalho(data) + code + _rodape())
