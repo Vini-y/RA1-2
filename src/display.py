@@ -1,26 +1,28 @@
-from typing import Iterable, List
+from typing import Iterable
 
-def formatar_valor(valor) -> str:
-    """Formata um valor numerico com uma casa decimal."""
+
+def formatar_valor(valor: float | int | None) -> str:
+    """Formata um valor numérico com uma casa decimal."""
     if isinstance(valor, (int, float)):
         return f"{float(valor):.1f}"
     if valor is None:
         return "<pendente>"
-    return str(valor)
+    raise TypeError(f"Valor invalido para exibicao: {valor!r}")
 
-def exibirResultados(resultados: Iterable[float]) -> List[str]:
-    """Exibe os resultados das expressoes avaliadas."""
+
+def exibirResultados(resultados: Iterable[float | int | None] | None) -> list[str]:
+    """Exibe os resultados das expressões avaliadas."""
     if resultados is None:
         print("Nenhum resultado para exibir.")
         return []
 
-    lista = list(resultados)
-    if not lista:
+    lista_resultados = list(resultados)
+    if not lista_resultados:
         print("Nenhum resultado para exibir.")
         return []
 
-    linhas = ["Resultados:"]
-    for indice, valor in enumerate(lista, start=1):
+    linhas: list[str] = ["Resultados:"]
+    for indice, valor in enumerate(lista_resultados, start=1):
         linhas.append(f"[{indice:02d}] {formatar_valor(valor)}")
 
     for linha in linhas:
