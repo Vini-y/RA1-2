@@ -31,7 +31,14 @@ def estadoEntrada(linha: str,
                   _tokens_:List[Tuple[str, str, int]] = [], 
                   word: str = "") -> int:
     
-    
+    if linha[index].isdecimal() : return estadoNumero,      index + 1, _tokens_, linha[index]
+    if linha[index] in _OP      : return estadoOperador,    index + 1, _tokens_, linha[index]
+    if linha[index] == '/'      : return estadoDivisao,     index + 1, _tokens_, linha[index]
+    if linha[index] == '('      : return estadoLPAREN,      index + 1, _tokens_, linha[index]
+    if linha[index] == ')'      : return estadoRPAREN,      index + 1, _tokens_, linha[index]
+    if linha[index] == 'R'      : return estadoR,           index + 1, _tokens_, linha[index]
+    if linha[index] in _ABC     : return estadoMEM,         index + 1, _tokens_, linha[index]
+    if linha[index].isspace()   : return estadoWhiteSpace,  index + 1, _tokens_, linha[index]
     
     return None # <- token inválido
 
