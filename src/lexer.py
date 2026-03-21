@@ -34,3 +34,90 @@ def estadoEntrada(linha: str,
     
     
     return None # <- token inválido
+
+def estadoNumero(linha: str, 
+                 index: int = 0, 
+                 _tokens_:List[Tuple[str, str, int]] = [], 
+                 word: str = "") -> int:
+    
+    ...
+
+def estadoPonto(linha: str, 
+                index: int = 0, 
+                _tokens_:List[Tuple[str, str, int]] = [], 
+                word: str = "") -> int:
+    
+    ...
+
+def estadoDecimal(linha: str, 
+                  index: int = 0, 
+                  _tokens_:List[Tuple[str, str, int]] = [], 
+                  word: str = "") -> int:
+    
+    ...
+
+
+def estadoOperador(linha: str, 
+                   index: int = 0, 
+                   _tokens_:List[Tuple[str, str, int]] = [], 
+                   word: str = "") -> int:
+    
+    ...
+
+def estadoDivisao(linha: str, 
+                  index: int = 0, 
+                  _tokens_:List[Tuple[str, str, int]] = [], 
+                  word: str = "") -> int:
+    
+    ...
+    
+
+def estadoWhiteSpace(linha: str, 
+                     index: int = 0, 
+                     _tokens_:List[Tuple[str, str, int]] = [], 
+                     word: str = "") -> int:
+    
+    ...
+
+def estadoLPAREN(linha: str, 
+                 index: int = 0, 
+                 _tokens_:List[Tuple[str, str, int]] = [], 
+                 word: str = "") -> int:
+    
+    ...
+    
+def estadoRPAREN(linha: str, 
+                 index: int = 0, 
+                 _tokens_:List[Tuple[str, str, int]] = [], 
+                 word: str = "") -> int:
+    
+    ...
+
+def estadoR(linha: str, 
+            index: int = 0, 
+            _tokens_:List[Tuple[str, str, int]] = [], 
+            word: str = "") -> int:
+    
+    ...
+    
+
+def estadoE(linha: str,
+            index: int = 0, 
+            _tokens_:List[Tuple[str, str, int]] = [], 
+            word: str = "") -> int:
+    
+    ...
+    
+def estadoS(linha: str,
+            index: int = 0, 
+            _tokens_:List[Tuple[str, str, int]] = [], 
+            word: str = "") -> int:
+    
+    ...
+
+def estadoMEM(linha: str, 
+              index: int = 0, 
+              _tokens_:List[Tuple[str, str, int]] = [], 
+              word: str = "") -> int:
+    
+    ...
