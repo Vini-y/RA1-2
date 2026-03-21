@@ -55,6 +55,20 @@ def _op_sub(code):
     code.append("    VSUB.F64 d2, d0, d1")
     code.append("    VPUSH {d2}")
 
+def _op_mul(code):
+    code.append("    @ OP *")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VMUL.F64 d2, d0, d1")
+    code.append("    VPUSH {d2}")
+
+def _op_div(code):
+    code.append("    @ OP /")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VDIV.F64 d2, d0, d1")
+    code.append("    VPUSH {d2}")
+
 def _emit_num(code, valor, label):
     code.append(f"    @ Carregar {valor}")
     code.append(f"    LDR  r0, ={label}")
@@ -64,6 +78,8 @@ def _emit_num(code, valor, label):
 OP_HANDLERS = {
     "+": _op_add,
     "-": _op_sub,
+    "*": _op_mul,
+    "/": _op_div,
 }
 
 INDENT = "    "
