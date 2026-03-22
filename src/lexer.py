@@ -156,7 +156,18 @@ def estadoR(linha: str,
             _tokens_:List[Tuple[str, str, int]] = [], 
             word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        _tokens_.append(("MEM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index] == 'E':
+        return estadoE, index+1, _tokens_, word + linha[index]
+    
+    if linha[index] in _ABC:
+        return estadoMEM, index + 1, _tokens_, word + linha[index]
+    
+    _tokens_.append(("MEM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
     
 
 def estadoE(linha: str,
@@ -164,18 +175,45 @@ def estadoE(linha: str,
             _tokens_:List[Tuple[str, str, int]] = [], 
             word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        _tokens_.append(("MEM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+
+    if linha[index] == 'S':
+        return estadoS, index+1, _tokens_, word + linha[index]
+    
+    if linha[index] in _ABC:
+        return estadoMEM, index + 1, _tokens_, word + linha[index]
+    
+    _tokens_.append(("MEM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
     
 def estadoS(linha: str,
             index: int = 0, 
             _tokens_:List[Tuple[str, str, int]] = [], 
             word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        _tokens_.append(("RES", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index] in _ABC:
+        return estadoMEM, index+1, _tokens_, word + linha[index]
+    
+    _tokens_.append(("RES", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoMEM(linha: str, 
               index: int = 0, 
               _tokens_:List[Tuple[str, str, int]] = [], 
               word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        _tokens_.append(("MEM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index] in _ABC:
+        return estadoMEM, index+1, _tokens_, word + linha[index]
+    
+    _tokens_.append(("MEM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
