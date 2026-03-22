@@ -208,4 +208,12 @@ def estadoMEM(linha: str,
               _tokens_:List[Tuple[str, str, int]] = [], 
               word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        _tokens_.append(("MEM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index] in _ABC:
+        return estadoMEM, index+1, _tokens_, word + linha[index]
+    
+    _tokens_.append(("MEM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
