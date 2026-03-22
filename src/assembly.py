@@ -97,6 +97,28 @@ def _op_mod(code):
     code.append("    VCVT.F64.S32 d2, s4")
     code.append("    VPUSH {d2}")
 
+_pow_count = 0
+
+def _op_pow(code):
+    global _pow_count
+    loop_label = f"pow_loop_{_pow_count}"
+    done_label = f"pow_done_{_pow_count}"
+    _pow_count += 1
+    code.append("    @ OP ^")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VCVT.S32.F64 s2, d1")
+    code.append("    VMOV  r0, s2")
+    code.append("    VMOV.F64 d2, d0")
+    code.append("    SUBS  r0, r0, #1")
+    code.append(f"    BEQ   {done_label}")
+    code.append(f"{loop_label}:")
+    code.append("    VMUL.F64 d2, d2, d0")
+    code.append("    SUBS  r0, r0, #1")
+    code.append(f"    BNE   {loop_label}")
+    code.append(f"{done_label}:")
+    code.append("    VPUSH {d2}")
+
 def _emit_num(code, valor, label):
     code.append(f"    @ Carregar {valor}")
     code.append(f"    LDR  r0, ={label}")
@@ -110,6 +132,7 @@ OP_HANDLERS = {
     "/": _op_div,
     "//": _op_floordiv,
     "%": _op_mod,
+    "^": _op_pow,
 }
 
 INDENT = "    "
