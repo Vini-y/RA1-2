@@ -182,6 +182,7 @@ def _exibir_resultado(code, L):
     code.append(f"    ORR   r7, r7, r3, LSL #8")
     code.append(f"    LDR   r0, =0xFF200030")
     code.append(f"    STR   r7, [r0]")
+    code.append(f"    BKPT  #0")
 
 def gerarAssembly(tokens_por_linha):
     data, code  = [], []
