@@ -126,21 +126,30 @@ def estadoWhiteSpace(linha: str,
                      _tokens_:List[Tuple[str, str, int]] = [], 
                      word: str = "") -> int:
     
-    ...
+    # não tokenizamos whitespace
+    if index >= len(linha):
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index].isspace():
+        return estadoWhiteSpace, index + 1, _tokens_, ""
+    
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoLPAREN(linha: str, 
                  index: int = 0, 
                  _tokens_:List[Tuple[str, str, int]] = [], 
                  word: str = "") -> int:
     
-    ...
+    _tokens_.append(("LPAREN", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
     
 def estadoRPAREN(linha: str, 
                  index: int = 0, 
                  _tokens_:List[Tuple[str, str, int]] = [], 
                  word: str = "") -> int:
     
-    ...
+    _tokens_.append(("RPAREN", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoR(linha: str, 
             index: int = 0, 
