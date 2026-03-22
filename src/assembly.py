@@ -145,12 +145,52 @@ def _is_store(tokens):
     sig = [(t, v) for t, v, _ in tokens if t not in ("LPAREN", "RPAREN")]
     return len(sig) == 2 and sig[0][0] == "NUM" and sig[1][0] == "MEM"
 
+def _div10(code):
+    code.append(f"    UMULL r0, r1, r4, r9")
+    code.append(f"    LSR   r1, r1, #3")
+    code.append(f"    MOV   r0, #10")
+    code.append(f"    MUL   r2, r1, r0")
+    code.append(f"    SUB   r2, r4, r2")
+    code.append(f"    MOV   r4, r1")
+
+def _exibir_resultado(code, L):
+    code.append(f"    @ Exibir resultado no HEX")
+    code.append(f"    VCVT.S32.F64 s0, d0")
+    code.append(f"    VMOV  r4, s0")
+    code.append(f"    MOV   r8, #0")
+    code.append(f"    CMP   r4, #0")
+    code.append(f"    BGE   _dp_{L}")
+    code.append(f"    MOV   r8, #0x40")
+    code.append(f"    RSB   r4, r4, #0")
+    code.append(f"_dp_{L}:")
+    code.append(f"    LDR   r6, =_seg7")
+    code.append(f"    LDR   r9, =0xCCCCCCCD")
+    _div10(code)
+    code.append(f"    LDRB  r5, [r6, r2]")
+    for shift in [8, 16, 24]:
+        _div10(code)
+        code.append(f"    LDRB  r3, [r6, r2]")
+        code.append(f"    ORR   r5, r5, r3, LSL #{shift}")
+    code.append(f"    LDR   r0, =0xFF200020")
+    code.append(f"    STR   r5, [r0]")
+    _div10(code)
+    code.append(f"    LDRB  r7, [r6, r2]")
+    _div10(code)
+    code.append(f"    LDRB  r3, [r6, r2]")
+    code.append(f"    CMP   r4, #0")
+    code.append(f"    MOVEQ r3, r8")
+    code.append(f"    ORR   r7, r7, r3, LSL #8")
+    code.append(f"    LDR   r0, =0xFF200030")
+    code.append(f"    STR   r7, [r0]")
+
 def gerarAssembly(tokens_por_linha):
     data, code  = [], []
     num_labels  = {}
     mem_labels  = {}
     res_labels  = []
     label_count = 0
+
+    data += [f"{INDENT}_seg7: .byte 0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F"]
 
     for L in range(len(tokens_por_linha)):
         label = f"result_{L}"
@@ -214,5 +254,6 @@ def gerarAssembly(tokens_por_linha):
             code.append(f"    VPOP  {{d0}}")
             code.append(f"    LDR   r1, ={res_labels[L]}")
             code.append(f"    VSTR  d0, [r1]")
+        _exibir_resultado(code, L)
 
     return "\n".join(_cabecalho(data) + code + _rodape())
