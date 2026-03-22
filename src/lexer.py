@@ -51,7 +51,7 @@ def estadoNumero(linha: str,
                  word: str = "") -> Estado | None:
     
     if index >= len(linha): 
-        _tokens_.append(("NUM", word, index - len(word)))
+        _tokens_.append(("INT", word, index - len(word)))
         return estadoEntrada, index, _tokens_, ""
     
     if linha[index].isdecimal():
@@ -60,7 +60,7 @@ def estadoNumero(linha: str,
     if linha[index] == '.':
         return estadoPonto, index+1, _tokens_, word + linha[index]
 
-    _tokens_.append(("NUM", word, index - len(word)))
+    _tokens_.append(("INT", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
 
 def estadoPonto(linha: str, 
@@ -83,7 +83,7 @@ def estadoDecimal(linha: str,
                   word: str = "") -> Estado | None:
     
     if index >= len(linha):
-        _tokens_.append(("NUM", word, index - len(word)))
+        _tokens_.append(("FLOAT", word, index - len(word)))
         return estadoEntrada, index, _tokens_, ""
     
     if linha[index].isdecimal():
@@ -93,7 +93,7 @@ def estadoDecimal(linha: str,
         # número malformado: mais de um ponto
         return None
     
-    _tokens_.append(("NUM", word, index - len(word)))
+    _tokens_.append(("FLOAT", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
 
 
