@@ -28,7 +28,7 @@ def lerArquivo():
     return linhas
 
 def _cabecalho(data):
-    linhas = [".global _start", ".data"]
+    linhas = [".cpu cortex-a9", ".fpu vfpv3-d16", ".global _start", ".data"]
     linhas.extend(data)
     linhas += ["", ".text", "_start:"]
     linhas += ["    @ Habilitar VFP",
@@ -73,12 +73,8 @@ def _op_floordiv(code):
     code.append("    @ OP //")
     code.append("    VPOP  {d1}")
     code.append("    VPOP  {d0}")
-    code.append("    VCVT.S32.F64 s0, d0")
-    code.append("    VCVT.S32.F64 s2, d1")
-    code.append("    VMOV r0, s0")
-    code.append("    VMOV r1, s2")
-    code.append("    SDIV r2, r0, r1")
-    code.append("    VMOV s4, r2")
+    code.append("    VDIV.F64 d2, d0, d1")
+    code.append("    VCVT.S32.F64 s4, d2")
     code.append("    VCVT.F64.S32 d2, s4")
     code.append("    VPUSH {d2}")
 
@@ -86,15 +82,11 @@ def _op_mod(code):
     code.append("    @ OP %")
     code.append("    VPOP  {d1}")
     code.append("    VPOP  {d0}")
-    code.append("    VCVT.S32.F64 s0, d0")
-    code.append("    VCVT.S32.F64 s2, d1")
-    code.append("    VMOV r0, s0")
-    code.append("    VMOV r1, s2")
-    code.append("    SDIV r2, r0, r1")
-    code.append("    MUL  r3, r2, r1")
-    code.append("    SUB  r2, r0, r3")
-    code.append("    VMOV s4, r2")
+    code.append("    VDIV.F64 d2, d0, d1")
+    code.append("    VCVT.S32.F64 s4, d2")
     code.append("    VCVT.F64.S32 d2, s4")
+    code.append("    VMUL.F64 d2, d2, d1")
+    code.append("    VSUB.F64 d2, d0, d2")
     code.append("    VPUSH {d2}")
 
 _pow_count = 0
