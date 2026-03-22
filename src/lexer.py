@@ -47,21 +47,51 @@ def estadoNumero(linha: str,
                  _tokens_:List[Tuple[str, str, int]] = [], 
                  word: str = "") -> int:
     
-    ...
+    if index >= len(linha): 
+        _tokens_.append(("NUM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index].isdecimal():
+        return estadoNumero, index+1, _tokens_, word + linha[index]
+    
+    if linha[index] == '.':
+        return estadoPonto, index+1, _tokens_, word + linha[index]
+
+    _tokens_.append(("NUM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoPonto(linha: str, 
                 index: int = 0, 
                 _tokens_:List[Tuple[str, str, int]] = [], 
                 word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        # número malformado: digito `n.` é inválido
+        return None
+    
+    if linha[index].isdecimal():
+        return estadoDecimal, index+1, _tokens_, word + linha[index]
+    
+    return None
 
 def estadoDecimal(linha: str, 
                   index: int = 0, 
                   _tokens_:List[Tuple[str, str, int]] = [], 
                   word: str = "") -> int:
     
-    ...
+    if index >= len(linha):
+        _tokens_.append(("NUM", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index].isdecimal():
+        return estadoDecimal, index+1, _tokens_, word + linha[index]
+    
+    if linha[index] == '.':
+        # número malformado: mais de um ponto
+        return None
+    
+    _tokens_.append(("NUM", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 
 def estadoOperador(linha: str, 
@@ -69,14 +99,26 @@ def estadoOperador(linha: str,
                    _tokens_:List[Tuple[str, str, int]] = [], 
                    word: str = "") -> int:
     
-    ...
+    _tokens_.append(("OP", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoDivisao(linha: str, 
                   index: int = 0, 
                   _tokens_:List[Tuple[str, str, int]] = [], 
                   word: str = "") -> int:
     
-    ...
+    # note que todos os operadores são de apenas um caracter, exceto
+    # divisão inteira (//)
+    if index >= len(linha):
+        _tokens_.append(("OP", word, index - len(word)))
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index] == '/':
+        _tokens_.append(("OP", word + linha[index], index - len(word)))
+        return estadoEntrada, index+1, _tokens_, ""
+    
+    _tokens_.append(("OP", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
     
 
 def estadoWhiteSpace(linha: str, 
@@ -84,21 +126,30 @@ def estadoWhiteSpace(linha: str,
                      _tokens_:List[Tuple[str, str, int]] = [], 
                      word: str = "") -> int:
     
-    ...
+    # não tokenizamos whitespace
+    if index >= len(linha):
+        return estadoEntrada, index, _tokens_, ""
+    
+    if linha[index].isspace():
+        return estadoWhiteSpace, index + 1, _tokens_, ""
+    
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoLPAREN(linha: str, 
                  index: int = 0, 
                  _tokens_:List[Tuple[str, str, int]] = [], 
                  word: str = "") -> int:
     
-    ...
+    _tokens_.append(("LPAREN", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
     
 def estadoRPAREN(linha: str, 
                  index: int = 0, 
                  _tokens_:List[Tuple[str, str, int]] = [], 
                  word: str = "") -> int:
     
-    ...
+    _tokens_.append(("RPAREN", word, index - len(word)))
+    return estadoEntrada, index, _tokens_, ""
 
 def estadoR(linha: str, 
             index: int = 0, 
