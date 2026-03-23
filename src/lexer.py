@@ -1,7 +1,10 @@
 # analisador léxico - aluno 1
 
-from typing import List, Tuple
+from typing import Callable, Any
 from string import ascii_uppercase
+
+Token = tuple[str, str, int] 
+Estado = tuple[Callable[..., Any] | None, int, list[Token], str]
 
 class LexError (Exception):
     ...
@@ -9,7 +12,7 @@ class LexError (Exception):
 _OP = r"+-*%^" # `/` não conta aqui, pois contamos `//` em um estado separado
 _ABC= ascii_uppercase
 
-def parseExpressao(linha: str, _tokens_:List[Tuple[str, str, int]]) -> List[str]:
+def parseExpressao(linha: str, _tokens_: list[Token]) -> None:
     if not linha: return []
     
     length = len(linha)
@@ -28,8 +31,8 @@ def parseExpressao(linha: str, _tokens_:List[Tuple[str, str, int]]) -> List[str]
 
 def estadoEntrada(linha: str, 
                   index: int = 0, 
-                  _tokens_:List[Tuple[str, str, int]] = [], 
-                  word: str = "") -> int:
+                  _tokens_: list[Token] = [], 
+                  word: str = "") -> Estado | None:
     
     if linha[index].isdecimal() : return estadoNumero,      index + 1, _tokens_, linha[index]
     if linha[index] in _OP      : return estadoOperador,    index + 1, _tokens_, linha[index]
@@ -44,11 +47,11 @@ def estadoEntrada(linha: str,
 
 def estadoNumero(linha: str, 
                  index: int = 0, 
-                 _tokens_:List[Tuple[str, str, int]] = [], 
-                 word: str = "") -> int:
+                 _tokens_: list[Token] = [], 
+                 word: str = "") -> Estado | None:
     
     if index >= len(linha): 
-        _tokens_.append(("NUM", word, index - len(word)))
+        _tokens_.append(("INT", word, index - len(word)))
         return estadoEntrada, index, _tokens_, ""
     
     if linha[index].isdecimal():
@@ -62,8 +65,8 @@ def estadoNumero(linha: str,
 
 def estadoPonto(linha: str, 
                 index: int = 0, 
-                _tokens_:List[Tuple[str, str, int]] = [], 
-                word: str = "") -> int:
+                _tokens_: list[Token] = [], 
+                word: str = "") -> Estado | None:
     
     if index >= len(linha):
         # número malformado: digito `n.` é inválido
@@ -76,8 +79,8 @@ def estadoPonto(linha: str,
 
 def estadoDecimal(linha: str, 
                   index: int = 0, 
-                  _tokens_:List[Tuple[str, str, int]] = [], 
-                  word: str = "") -> int:
+                  _tokens_: list[Token] = [], 
+                  word: str = "") -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("NUM", word, index - len(word)))
@@ -96,16 +99,16 @@ def estadoDecimal(linha: str,
 
 def estadoOperador(linha: str, 
                    index: int = 0, 
-                   _tokens_:List[Tuple[str, str, int]] = [], 
-                   word: str = "") -> int:
+                   _tokens_: list[Token] = [], 
+                   word: str = "") -> Estado | None:
     
     _tokens_.append(("OP", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
 
 def estadoDivisao(linha: str, 
                   index: int = 0, 
-                  _tokens_:List[Tuple[str, str, int]] = [], 
-                  word: str = "") -> int:
+                  _tokens_: list[Token] = [], 
+                  word: str = "") -> Estado | None:
     
     # note que todos os operadores são de apenas um caracter, exceto
     # divisão inteira (//)
@@ -123,8 +126,8 @@ def estadoDivisao(linha: str,
 
 def estadoWhiteSpace(linha: str, 
                      index: int = 0, 
-                     _tokens_:List[Tuple[str, str, int]] = [], 
-                     word: str = "") -> int:
+                     _tokens_: list[Token] = [], 
+                     word: str = "") -> Estado | None:
     
     # não tokenizamos whitespace
     if index >= len(linha):
@@ -137,24 +140,24 @@ def estadoWhiteSpace(linha: str,
 
 def estadoLPAREN(linha: str, 
                  index: int = 0, 
-                 _tokens_:List[Tuple[str, str, int]] = [], 
-                 word: str = "") -> int:
+                 _tokens_: list[Token] = [], 
+                 word: str = "") -> Estado | None:
     
     _tokens_.append(("LPAREN", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
     
 def estadoRPAREN(linha: str, 
                  index: int = 0, 
-                 _tokens_:List[Tuple[str, str, int]] = [], 
-                 word: str = "") -> int:
+                 _tokens_: list[Token] = [], 
+                 word: str = "") -> Estado | None:
     
     _tokens_.append(("RPAREN", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
 
 def estadoR(linha: str, 
             index: int = 0, 
-            _tokens_:List[Tuple[str, str, int]] = [], 
-            word: str = "") -> int:
+            _tokens_: list[Token] = [], 
+            word: str = "") -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("MEM", word, index - len(word)))
@@ -172,8 +175,8 @@ def estadoR(linha: str,
 
 def estadoE(linha: str,
             index: int = 0, 
-            _tokens_:List[Tuple[str, str, int]] = [], 
-            word: str = "") -> int:
+            _tokens_: list[Token] = [], 
+            word: str = "") -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("MEM", word, index - len(word)))
@@ -190,8 +193,8 @@ def estadoE(linha: str,
     
 def estadoS(linha: str,
             index: int = 0, 
-            _tokens_:List[Tuple[str, str, int]] = [], 
-            word: str = "") -> int:
+            _tokens_: list[Token] = [], 
+            word: str = "") -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("RES", word, index - len(word)))
@@ -205,8 +208,8 @@ def estadoS(linha: str,
 
 def estadoMEM(linha: str, 
               index: int = 0, 
-              _tokens_:List[Tuple[str, str, int]] = [], 
-              word: str = "") -> int:
+              _tokens_: list[Token] = [], 
+              word: str = "") -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("MEM", word, index - len(word)))
