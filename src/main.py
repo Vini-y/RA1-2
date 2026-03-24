@@ -55,3 +55,18 @@ def salvarAssembly(codigo_assembly, caminho="assembly.s"):
         sys.exit(1)
 
 
+def main():
+    linhas = lerArquivo()
+    tokens_por_linha = tokenizarLinhas(linhas)
+
+    salvarTokens(tokens_por_linha)
+
+    assembly = gerarAssembly(tokens_por_linha)
+    salvarAssembly(assembly)
+
+    #resultados = executarExpressao(tokens)
+    #exibirResultados(resultados)
+
+
+if __name__ == "__main__":
+    main()
