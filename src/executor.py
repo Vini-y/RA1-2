@@ -52,17 +52,7 @@ class ErroMemoriaNaoInicializada(Exception):
 class ErroHistoricoInvalido(Exception):
     pass
 
-#Converter linha em tokens utilizando o lexer
-
-def tokenizar(linha : str) -> str:
-    """Chama a parseExpressao do Lexer e retorna lista de de tokens
-        propaga LexError se tiverem símbolos inválidos
-    """
-
-    tokens = []
-    parseExpressao(linha, tokens)
-    return tokens
-
+# Encontra o fechamento de um LPAREN específico (RPAREN equivalente)
 def encontrar_fechamento(tokens: list, inicio: int) -> int:
     """
     tokens[inicio] é um LPAREN, a função retorna o RPAREN
