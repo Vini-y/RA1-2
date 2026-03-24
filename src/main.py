@@ -28,4 +28,17 @@ def tokenizarLinhas(linhas):
     return tokens_por_linha
 
 
+def salvarTokens(tokens_por_linha, caminho="tokens.txt"):
+    """Salva os tokens da última execução em tokens.txt"""
+    try:
+        with open(caminho, "w", encoding="utf-8") as f:
+            f.write("tipo,valor,posicao\n")
+            for tokenslinha in tokens_por_linha:
+                for tipo, valor, pos in tokenslinha:
+                    f.write(f"{tipo},{valor},{pos}\n")
+        print(f"Tokens salvos em '{caminho}'.")
+    except OSError as e:
+        print(f"Erro ao salvar tokens: {e}", file=sys.stderr)
+
+
 
