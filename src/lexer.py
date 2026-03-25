@@ -51,7 +51,7 @@ def estadoNumero(linha: str,
                  word: str = "") -> Estado | None:
     
     if index >= len(linha): 
-        _tokens_.append(("INT", word, index - len(word)))
+        _tokens_.append(("NUM", word, index - len(word)))
         return estadoEntrada, index, _tokens_, ""
     
     if linha[index].isdecimal():
