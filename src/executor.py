@@ -135,16 +135,16 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
             tipo(interior[0]) == T_NUM and
             tipo(interior[1]) == T_RES):
         n = int(float(valor(interior[0])))
-        if n < 0:
+        if n <= 0:
             raise ErroHistoricoInvalido(
-                f"N em (N RES) deve ser não negativo, recebeu: {n}"
+                f"N em (N RES) deve ser não negativo e maior que 0, recebeu: {n}"
             )
-        if n >= len(historico):
+        if n > len(historico):
             raise ErroHistoricoInvalido(
                 f"Histórico tem {len(historico)} entradas, "
                 f"mas foi pedido índice {n}"
             )
-        return historico[n]
+        return historico[n - 1]
  
     # (NUM MEM) — escrita em memória
     if (len(interior) == 2 and
