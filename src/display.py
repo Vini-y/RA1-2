@@ -1,16 +1,16 @@
 from typing import Iterable
 
 
-def formatar_valor(valor: float | int | None) -> str:
-    """Formata um valor numérico com uma casa decimal."""
+def formatar_valor(valor: float | None) -> str:
+    """Formata um valor numérico com duas casas decimais."""
     if isinstance(valor, (int, float)):
-        return f"{float(valor):.1f}"
+        return f"{float(valor):.2f}"
     if valor is None:
         return "<pendente>"
     raise TypeError(f"Valor invalido para exibicao: {valor!r}")
 
 
-def exibirResultados(resultados: Iterable[float | int | None] | None) -> list[str]:
+def exibirResultados(resultados: Iterable[float | None] | None) -> list[str]:
     """Exibe os resultados das expressões avaliadas."""
     if resultados is None:
         print("Nenhum resultado para exibir.")
