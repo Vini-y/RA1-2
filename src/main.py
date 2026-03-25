@@ -10,7 +10,7 @@ import sys
 from lexer import parseExpressao, LexError
 from assembly import lerArquivo, gerarAssembly
 from display import exibirResultados
-#from executor import executarExpressao, ErroExpressaoInvalida, ErroDivisaoPorZero, ErroMemoriaNaoInicializada, ErroHistoricoInvalido
+from executor import executarExpressao, ErroExpressaoInvalida, ErroDivisaoPorZero, ErroMemoriaNaoInicializada, ErroHistoricoInvalido
 
 
 def tokenizarLinhas(linhas):
@@ -36,6 +36,41 @@ def tokenizarLinhas(linhas):
 
     return tokens_por_linha
 
+def executarLinhas(tokens_por_linha):
+    """
+    Executa cada linha de tokens via executarExpressao, mantendo
+    memória e histórico compartilhados entre todas as linhas do arquivo.
+
+    Retorna a lista de resultados (float), na mesma ordem das linhas.
+    O histórico segue a convenção do executor: índice 0 = resultado
+    mais recente, portanto (1 RES) acessa o resultado da linha anterior.
+    """
+    memoria   = {}
+    historico = []
+    resultados = []
+
+    for numero_linha, tokens in enumerate(tokens_por_linha, start=0):
+        try:
+            resultado = executarExpressao(tokens, memoria, historico)
+            resultados.append(resultado)
+        except ErroDivisaoPorZero as e:
+            print(f"Erro na linha {numero_linha}: divisão por zero — {e}",
+                  file=sys.stderr)
+            sys.exit(1)
+        except ErroMemoriaNaoInicializada as e:
+            print(f"Erro na linha {numero_linha}: memória não inicializada — {e}",
+                  file=sys.stderr)
+            sys.exit(1)
+        except ErroHistoricoInvalido as e:
+            print(f"Erro na linha {numero_linha}: RES inválido — {e}",
+                  file=sys.stderr)
+            sys.exit(1)
+        except ErroExpressaoInvalida as e:
+            print(f"Erro na linha {numero_linha}: expressão inválida — {e}",
+                  file=sys.stderr)
+            sys.exit(1)
+
+    return resultados
 
 def salvarTokens(tokens_por_linha, caminho="tokens.txt"):
     """Salva os tokens da última execução em tokens.txt"""
@@ -71,9 +106,9 @@ def main():
 
     salvarTokens(tokens_por_linha)
 
-    #resultados = executarLinhas(tokens_por_linha)
+    resultados = executarLinhas(tokens_por_linha)
 
-    #exibirResultados(resultados)
+    exibirResultados(resultados)
 
     assembly = gerarAssembly(tokens_por_linha)
 
