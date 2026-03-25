@@ -1,14 +1,23 @@
-﻿import sys
+﻿# Integrantes (ordem alfabética) e GitHub:
+# - Gabriel Vidal Schneider (@Gabiru1089)
+# - Lucca Fabricio Magalhães (@luccafm1)
+# - Mohamad Kassem Diab (@Mo1409)
+# - Vinícius Yamamoto Borges (@Vini-y)
+#
+# Grupo no Canvas: RA1 2
+
+import sys
 from lexer import parseExpressao, LexError
 from assembly import lerArquivo, gerarAssembly
 from display import exibirResultados
-#from executor import executarExpressao
+#from executor import executarExpressao, ErroExpressaoInvalida, ErroDivisaoPorZero, ErroMemoriaNaoInicializada, ErroHistoricoInvalido
 
 
 def tokenizarLinhas(linhas):
     """
     Percorre cada linha do arquivo fonte e chama parseExpressao.
     Retorna uma lista de listas de tokens (tokens por linha).
+    Linhas em branco são ignoradas.
     """
     tokens_por_linha = []
 
@@ -57,15 +66,18 @@ def salvarAssembly(codigo_assembly, caminho="assembly.s"):
 
 def main():
     linhas = lerArquivo()
+
     tokens_por_linha = tokenizarLinhas(linhas)
 
     salvarTokens(tokens_por_linha)
 
-    assembly = gerarAssembly(tokens_por_linha)
-    salvarAssembly(assembly)
+    #resultados = executarLinhas(tokens_por_linha)
 
-    #resultados = executarExpressao(tokens)
     #exibirResultados(resultados)
+
+    assembly = gerarAssembly(tokens_por_linha)
+
+    salvarAssembly(assembly)
 
 
 if __name__ == "__main__":
