@@ -4,7 +4,7 @@ from typing import Iterable
 def formatar_valor(valor: float | None) -> str:
     """Formata um valor numérico com duas casas decimais."""
     if isinstance(valor, (int, float)):
-        return f"{float(valor):.2f}"
+        return f"{float(valor):.1f}"
     if valor is None:
         return "<pendente>"
     raise TypeError(f"Valor invalido para exibicao: {valor!r}")
