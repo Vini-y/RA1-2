@@ -78,6 +78,7 @@ O programa gera:
 ## Como rodar os testes de cada módulo
 
 ```bash
+python src/lexer.py     # testes do parseExpressao 
 python src/assembly.py  # testes do gerador de Assembly e leitura de arquivo
 ```
 
