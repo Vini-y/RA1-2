@@ -7,7 +7,8 @@ executarExpressao.py
 Avalia as expressões produzidas em lexer.py
 
 Formato do Token esperado: tupla (tipo, valor, posição)
-    ("NUM", "3.14", 2)
+    ("INT",   "10",   1)
+    ("FLOAT", "3.14", 1)
     ("OP", "+", 7)
     ("LPAREN", "(", 0)
     ("RPAREN", ")", 9)
@@ -20,8 +21,8 @@ Depende de:
 """
 
 # Constantes - tipos de token do lexer
-
-T_NUM = "NUM"
+T_FLOAT ="FLOAT"
+T_INT = "INT"
 T_OP = "OP"
 T_LPAREN = "LPAREN"
 T_RPAREN = "RPAREN"
@@ -38,6 +39,10 @@ def valor(token: tuple) -> str:
 
 def posicao(token: tuple) -> int:
     return token[2]
+
+def eh_numero(token: tuple) -> bool:
+    """Retorna True se o token é um número (INT ou FLOAT)."""
+    return tipo(token) in (T_INT, T_FLOAT)
 
 # Exceções específicas de execução
 
@@ -74,31 +79,35 @@ def encontrar_fechamento(tokens: list, inicio: int) -> int:
     )
 
 def _aplicar_operador(op: str, a: float, b: float) -> float:
-    """
-    Aplicar operador sobre 2 floats 
-    """
+
     if op == '+': return a + b
     if op == '-': return a - b
     if op == '*': return a * b
+ 
     if op == '/':
         if b == 0.0:
             raise ErroDivisaoPorZero(f"Divisão real por zero: {a} / {b}")
-        return a/ b
-    if op =='//':
+        return a / b
+ 
+    if op == '//':
         if b == 0:
-            raise ErroDivisaoPorZero(f"Divisão inteira por zero: {a} / {b}")
+            raise ErroDivisaoPorZero(f"Divisão inteira por zero: {a} // {b}")
+        # int() garante semântica de inteiro, float() mantém pilha uniforme
         return float(int(a) // int(b))
-    if op == "%":
+ 
+    if op == '%':
         if b == 0:
             raise ErroDivisaoPorZero(f"Resto por zero: {a} % {b}")
         return float(int(a) % int(b))
-    if op == "^":
+ 
+    if op == '^':
         exp = int(b)
         if exp < 0:
             raise ErroExpressaoInvalida(
                 f"Expoente deve ser inteiro positivo, recebeu {b}"
             )
         return float(a ** exp)
+ 
     raise ErroExpressaoInvalida(f"Operador '{op}' desconhecido")
 
 # Avaliador de expressão plana (sem aninhamento)
@@ -108,12 +117,12 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
     Avalia uma expressão RPN plana (sem LPAREN internos) usando pilha.
  
     Detecta o tipo de expressão pelo conteúdo interno:
-      ( MEM )       -> leitura de memória
-      ( NUM RES )   -> histórico
-      ( NUM MEM )   -> escrita em memória
-      ( NUM... OP ) -> aritmética RPN
+      ( MEM )             -> leitura de variável de memória
+      ( INT|FLOAT RES )   -> retorna resultado N linhas anteriores
+      ( INT|FLOAT MEM )   -> escrita em variável de memória
+      ( INT|FLOAT... OP ) -> aritmética RPN com pilha
     """
-    # Remove parênteses externos
+    # Remove parênteses externos para trabalhar com o interior
     if tipo(tokens[0]) == T_LPAREN and tipo(tokens[-1]) == T_RPAREN:
         interior = tokens[1:-1]
     else:
@@ -121,7 +130,7 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
             "Expressão deve começar com '(' e terminar com ')'"
         )
  
-    # (MEM) — leitura de variável
+    # (MEM) — leitura de variável 
     if len(interior) == 1 and tipo(interior[0]) == T_MEM:
         nome = valor(interior[0])
         if nome not in memoria:
@@ -130,39 +139,48 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
             )
         return memoria[nome]
  
-    # (NUM RES) — retorna resultado N linhas anteriores
+    # (INT|FLOAT RES) — N linhas anteriores
+    # N=1 - linha imediatamente anterior - historico[0]
+    # N=2 - duas linhas atrás - historico[1]
+    # índice no histórico = n - 1
     if (len(interior) == 2 and
-            tipo(interior[0]) == T_NUM and
+            eh_numero(interior[0]) and
             tipo(interior[1]) == T_RES):
         n = int(float(valor(interior[0])))
         if n <= 0:
             raise ErroHistoricoInvalido(
-                f"N em (N RES) deve ser não negativo e maior que 0, recebeu: {n}"
+                f"N em (N RES) deve ser positivo, recebeu: {n}"
             )
-        if n > len(historico):
+        idx = n - 1
+        if idx >= len(historico):
             raise ErroHistoricoInvalido(
                 f"Histórico tem {len(historico)} entradas, "
-                f"mas foi pedido índice {n}"
+                f"mas foi pedido {n} linhas atrás (índice {idx})"
             )
-        return historico[n - 1]
+        return historico[idx]
  
-    # (NUM MEM) — escrita em memória
+    # ── (INT|FLOAT MEM) — escrita em variável ────────────────────
     if (len(interior) == 2 and
-            tipo(interior[0]) == T_NUM and
+            eh_numero(interior[0]) and
             tipo(interior[1]) == T_MEM):
         v    = float(valor(interior[0]))
         nome = valor(interior[1])
         memoria[nome] = v
         return v
  
-    # Aritmética RPN com pilha
+    # ── Aritmética RPN com pilha ──────────────────────────────────
+    # Para cada token do interior:
+    #   INT ou FLOAT - converte para float e empilha
+    #   OP - desempilha b e a, aplica operador, empilha resultado
+    #   MEM - lê variável da memória e empilha
     pilha = []
  
     for tok in interior:
         t = tipo(tok)
         v = valor(tok)
  
-        if t == T_NUM:
+        # INT e FLOAT são ambos empilhados como float
+        if t in (T_INT, T_FLOAT):
             pilha.append(float(v))
  
         elif t == T_OP:
@@ -171,11 +189,13 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
                     f"Operador '{v}' requer 2 operandos, "
                     f"pilha tem {len(pilha)}"
                 )
+            # Em RPN: topo da pilha é b, segundo elemento é a → (a b op)
             b = pilha.pop()
             a = pilha.pop()
             pilha.append(_aplicar_operador(v, a, b))
  
         elif t == T_MEM:
+            # MEM usada como operando em expressão aritmética
             nome = v
             if nome not in memoria:
                 raise ErroMemoriaNaoInicializada(
@@ -184,6 +204,7 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
             pilha.append(memoria[nome])
  
         elif t == T_RES:
+            # RES sem número antes é erro de estrutura
             raise ErroExpressaoInvalida(
                 "RES deve ser precedido de um número inteiro: (N RES)"
             )
@@ -205,10 +226,10 @@ def preprocessar_aninhamento(tokens: list, memoria: dict, historico: list) -> li
     """
     Resolve expressões aninhadas de dentro para fora. Cada iteração:
  
-    - Lê a lista completa de tokens da esquerda para a direita
-    - Ao encontrar um LPAREN cujo interior não tem outros LPAREN, identifica
-      como o mais interno, avalia com a pilha e substitui o segmento pelo
-      valor calculado como token NUM
+    - Varre a lista da esquerda para a direita
+    - Ao encontrar um LPAREN cujo interior não tem outros LPAREN,
+      identifica como o mais interno e avalia com _avaliar_expressao_plana
+    - Substitui o segmento inteiro pelo resultado como token INT
     - Reinicia a varredura
     - Para quando o único LPAREN restante é o da expressão externa
     """
@@ -222,10 +243,12 @@ def preprocessar_aninhamento(tokens: list, memoria: dict, historico: list) -> li
             fechamento = encontrar_fechamento(tokens, i)
             interior   = tokens[i + 1 : fechamento]
  
+            # Se o interior tem outro LPAREN, ainda há aninhamento — pula
             tem_aninhado = any(tipo(t) == T_LPAREN for t in interior)
             if tem_aninhado:
                 continue
  
+            # Se não há LPAREN fora deste segmento, é a expressão final
             externos = [
                 t for t in (tokens[:i] + tokens[fechamento + 1:])
                 if tipo(t) == T_LPAREN
@@ -233,11 +256,14 @@ def preprocessar_aninhamento(tokens: list, memoria: dict, historico: list) -> li
             if not externos:
                 break
  
-            sub_tokens = tokens[i : fechamento + 1]
-            resultado = _avaliar_expressao_plana(sub_tokens, memoria, historico)
-            token_resultado = (T_NUM, repr(resultado), 0)
-            tokens = tokens[:i] + [token_resultado] + tokens[fechamento + 1:]
-            encontrou = True
+            # Avalia a sub-expressão mais interna e substitui pelo resultado
+            sub_tokens      = tokens[i : fechamento + 1]
+            resultado       = _avaliar_expressao_plana(sub_tokens, memoria, historico)
+ 
+            # Usa INT como tipo do token resultado (posição 0 como placeholder)
+            token_resultado = (T_INT, repr(resultado), 0)
+            tokens          = tokens[:i] + [token_resultado] + tokens[fechamento + 1:]
+            encontrou       = True
             break
  
         if not encontrou:
@@ -245,14 +271,15 @@ def preprocessar_aninhamento(tokens: list, memoria: dict, historico: list) -> li
  
     return tokens
  
+ 
 def executarExpressao(tokens: list, memoria: dict, historico: list) -> float:
     """
     Avalia uma expressão RPN representada como lista de tuplas.
  
     Passos:
-        1. Pré-processa expressões aninhadas (preprocessar_aninhamento)
-        2. Avalia a expressão plana resultante com pilha (IEEE 754 64 bits)
-        3. Insere o resultado no início do histórico
+        - Pré-processa expressões aninhadas (preprocessar_aninhamento)
+        - Avalia a expressão plana resultante com pilha (IEEE 754 64 bits)
+        - Insere o resultado no início do histórico
  
     Parâmetros:
         tokens   : list[tuple] — saída de parseExpressao
