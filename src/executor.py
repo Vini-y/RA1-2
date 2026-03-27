@@ -1,4 +1,4 @@
-# Executor de expressões RPN e gerenciamento de memória
+# Grupo no Canvas: RA1 2
 
 # Integrantes (ordem alfabética) e GitHub:
 # - Gabriel Vidal Schneider (@Gabiru1089)
@@ -6,7 +6,6 @@
 # - Mohamad Kassem Diab (@Mo1409)
 # - Vinícius Yamamoto Borges (@Vini-y)
 
-# Grupo no Canvas: RA1 2
 
 from lexer import parseExpressao, LexError
 

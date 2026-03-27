@@ -1,4 +1,4 @@
-# Leitura de arquivo e gerador de Assembly ARMv7
+# Grupo no Canvas: RA1 2
 
 # Integrantes (ordem alfabética) e GitHub:
 # - Gabriel Vidal Schneider (@Gabiru1089)
