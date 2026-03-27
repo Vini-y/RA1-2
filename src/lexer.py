@@ -1,5 +1,13 @@
 # analisador léxico - aluno 1
 
+# Integrantes (ordem alfabética) e GitHub:
+# - Gabriel Vidal Schneider (@Gabiru1089)
+# - Lucca Fabricio Magalhães (@luccafm1)
+# - Mohamad Kassem Diab (@Mo1409)
+# - Vinícius Yamamoto Borges (@Vini-y)
+
+# Grupo no Canvas: RA1 2
+
 from typing import Callable, Any
 from string import ascii_uppercase
 
