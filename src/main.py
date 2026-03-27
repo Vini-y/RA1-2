@@ -1,10 +1,10 @@
-﻿# Integrantes (ordem alfabética) e GitHub:
+﻿# Grupo no Canvas: RA1 2
+
+# Integrantes (ordem alfabética) e GitHub:
 # - Gabriel Vidal Schneider (@Gabiru1089)
 # - Lucca Fabricio Magalhães (@luccafm1)
 # - Mohamad Kassem Diab (@Mo1409)
 # - Vinícius Yamamoto Borges (@Vini-y)
-#
-# Grupo no Canvas: RA1 2
 
 import sys
 from lexer import parseExpressao, LexError
@@ -85,7 +85,7 @@ def salvarTokens(tokens_por_linha, caminho="tokens.txt"):
         print(f"Erro ao salvar tokens: {e}", file=sys.stderr)
 
 
-def salvarAssembly(codigo_assembly, caminho="assembly.s"):
+def salvarAssembly(codigo_assembly, caminho="assembly/assembly.s"):
     """Grava o código Assembly gerado em disco"""
     if not codigo_assembly:
         print("gerarAssembly não retornou código.")
