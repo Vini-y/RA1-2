@@ -32,13 +32,11 @@ def parseExpressao(linha: str, _tokens_: list[Token]) -> None:
 
         if read is None:
             raise LexError(f'Token inválido ou malformado: {linha[idx]} na posição {idx}')
-    
-    _tokens_.sort(key=lambda f: f[2]) 
 
 def estadoEntrada(linha: str, 
-                  index: int = 0, 
-                  _tokens_: list[Token] = [], 
-                  word: str = "") -> Estado | None:
+                  index: int, 
+                  _tokens_: list[Token], 
+                  word: str) -> Estado | None:
     
     if linha[index].isdecimal() : return estadoNumero,      index + 1, _tokens_, linha[index]
     if linha[index] in _OP      : return estadoOperador,    index + 1, _tokens_, linha[index]
@@ -52,9 +50,9 @@ def estadoEntrada(linha: str,
     return None # <- token inválido
 
 def estadoNumero(linha: str, 
-                 index: int = 0, 
-                 _tokens_: list[Token] = [], 
-                 word: str = "") -> Estado | None:
+                 index: int, 
+                 _tokens_: list[Token], 
+                 word: str) -> Estado | None:
     
     if index >= len(linha): 
         _tokens_.append(("INT", word, index - len(word)))
@@ -70,9 +68,9 @@ def estadoNumero(linha: str,
     return estadoEntrada, index, _tokens_, ""
 
 def estadoPonto(linha: str, 
-                index: int = 0, 
-                _tokens_: list[Token] = [], 
-                word: str = "") -> Estado | None:
+                index: int, 
+                _tokens_: list[Token], 
+                word: str) -> Estado | None:
     
     if index >= len(linha):
         # número malformado: digito `n.` é inválido
@@ -84,9 +82,9 @@ def estadoPonto(linha: str,
     return None
 
 def estadoDecimal(linha: str, 
-                  index: int = 0, 
-                  _tokens_: list[Token] = [], 
-                  word: str = "") -> Estado | None:
+                  index: int, 
+                  _tokens_: list[Token], 
+                  word: str) -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("FLOAT", word, index - len(word)))
@@ -104,17 +102,17 @@ def estadoDecimal(linha: str,
 
 
 def estadoOperador(linha: str, 
-                   index: int = 0, 
-                   _tokens_: list[Token] = [], 
-                   word: str = "") -> Estado | None:
+                   index: int, 
+                   _tokens_: list[Token], 
+                   word: str) -> Estado | None:
     
     _tokens_.append(("OP", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
 
 def estadoDivisao(linha: str, 
-                  index: int = 0, 
-                  _tokens_: list[Token] = [], 
-                  word: str = "") -> Estado | None:
+                  index: int, 
+                  _tokens_: list[Token], 
+                  word: str) -> Estado | None:
     
     # note que todos os operadores são de apenas um caracter, exceto
     # divisão inteira (//)
@@ -129,11 +127,10 @@ def estadoDivisao(linha: str,
     _tokens_.append(("OP", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
     
-
 def estadoWhiteSpace(linha: str, 
-                     index: int = 0, 
-                     _tokens_: list[Token] = [], 
-                     word: str = "") -> Estado | None:
+                     index: int, 
+                     _tokens_: list[Token], 
+                     word: str) -> Estado | None:
     
     # não tokenizamos whitespace
     if index >= len(linha):
@@ -145,25 +142,25 @@ def estadoWhiteSpace(linha: str,
     return estadoEntrada, index, _tokens_, ""
 
 def estadoLPAREN(linha: str, 
-                 index: int = 0, 
-                 _tokens_: list[Token] = [], 
-                 word: str = "") -> Estado | None:
+                 index: int, 
+                 _tokens_: list[Token], 
+                 word: str) -> Estado | None:
     
     _tokens_.append(("LPAREN", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
     
 def estadoRPAREN(linha: str, 
-                 index: int = 0, 
-                 _tokens_: list[Token] = [], 
-                 word: str = "") -> Estado | None:
+                 index: int, 
+                 _tokens_: list[Token], 
+                 word: str) -> Estado | None:
     
     _tokens_.append(("RPAREN", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
 
 def estadoR(linha: str, 
-            index: int = 0, 
-            _tokens_: list[Token] = [], 
-            word: str = "") -> Estado | None:
+            index: int, 
+            _tokens_: list[Token], 
+            word: str) -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("MEM", word, index - len(word)))
@@ -180,9 +177,9 @@ def estadoR(linha: str,
     
 
 def estadoE(linha: str,
-            index: int = 0, 
-            _tokens_: list[Token] = [], 
-            word: str = "") -> Estado | None:
+            index: int, 
+            _tokens_: list[Token], 
+            word: str) -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("MEM", word, index - len(word)))
@@ -198,9 +195,9 @@ def estadoE(linha: str,
     return estadoEntrada, index, _tokens_, ""
     
 def estadoS(linha: str,
-            index: int = 0, 
-            _tokens_: list[Token] = [], 
-            word: str = "") -> Estado | None:
+            index: int, 
+            _tokens_: list[Token], 
+            word: str) -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("RES", word, index - len(word)))
@@ -213,9 +210,9 @@ def estadoS(linha: str,
     return estadoEntrada, index, _tokens_, ""
 
 def estadoMEM(linha: str, 
-              index: int = 0, 
-              _tokens_: list[Token] = [], 
-              word: str = "") -> Estado | None:
+              index: int, 
+              _tokens_: list[Token], 
+              word: str) -> Estado | None:
     
     if index >= len(linha):
         _tokens_.append(("MEM", word, index - len(word)))
@@ -226,3 +223,52 @@ def estadoMEM(linha: str,
     
     _tokens_.append(("MEM", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
+
+
+def test_entradas_validas():
+    casos = [
+        "(3.14 2.0 +)",                # (, 3.14, 2.0, +, )
+        "(5 RES)",                     # (, 5, RES, )
+        "(10.5 CONTADOR)",             # (, 10.5, CONTADOR, )
+        "((1.5 2.0 *) (3.0 4.0 *) //)" # (, (, 1.5, ... //, )
+    ]
+
+    for expressao in casos:
+        tokens = []
+        try:
+            parseExpressao(expressao, tokens)
+            print(f"[PASS] '{expressao}'")
+        except AssertionError as e:
+            print(f"[FAIL] {e}")
+        except Exception as e:
+            print(f"[UNEXPECTED ERROR] em '{expressao}': {e}")
+
+def test_entradas_invalidas():
+    casos = [
+        "(3.14 2.0 &)",   # '&' não pertence à linguagem
+        "(3.14.5 2.0 +)", # float com mais de um ponto
+        "(3,45 2.0 +)",   # uso de vírgula em vez de ponto
+        "(@ 2.0 *)"       # caractere especial não reconhecido
+    ]
+
+    for expressao in casos:
+        tokens = []
+        try:
+            parseExpressao(expressao, tokens)
+            print(f"[FAIL] Esperava LexError em '{expressao}', mas passou.")
+        except LexError as e:
+            print(f"[PASS] Erro léxico capturado com sucesso em '{expressao}': {e}")
+
+def executar_testes_lexer():
+    print("\n>>> INICIANDO TESTES DE VALIDAÇÃO...")
+    test_entradas_validas()
+    
+    print("\n>>> INICIANDO TESTES DE REJEIÇÃO...")
+    test_entradas_invalidas()
+    
+    print("\n" + "="*50)
+    print(" TODOS OS TESTES LÉXICOS CONCLUÍDOS ")
+    print("="*50)
+
+if __name__ == "__main__":
+    executar_testes_lexer()
