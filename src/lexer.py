@@ -223,3 +223,52 @@ def estadoMEM(linha: str,
     
     _tokens_.append(("MEM", word, index - len(word)))
     return estadoEntrada, index, _tokens_, ""
+
+
+def test_entradas_validas():
+    casos = [
+        "(3.14 2.0 +)",                # (, 3.14, 2.0, +, )
+        "(5 RES)",                     # (, 5, RES, )
+        "(10.5 CONTADOR)",             # (, 10.5, CONTADOR, )
+        "((1.5 2.0 *) (3.0 4.0 *) //)" # (, (, 1.5, ... //, )
+    ]
+
+    for expressao in casos:
+        tokens = []
+        try:
+            parseExpressao(expressao, tokens)
+            print(f"[PASS] '{expressao}'")
+        except AssertionError as e:
+            print(f"[FAIL] {e}")
+        except Exception as e:
+            print(f"[UNEXPECTED ERROR] em '{expressao}': {e}")
+
+def test_entradas_invalidas():
+    casos = [
+        "(3.14 2.0 &)",   # '&' não pertence à linguagem
+        "(3.14.5 2.0 +)", # float com mais de um ponto
+        "(3,45 2.0 +)",   # uso de vírgula em vez de ponto
+        "(@ 2.0 *)"       # caractere especial não reconhecido
+    ]
+
+    for expressao in casos:
+        tokens = []
+        try:
+            parseExpressao(expressao, tokens)
+            print(f"[FAIL] Esperava LexError em '{expressao}', mas passou.")
+        except LexError as e:
+            print(f"[PASS] Erro léxico capturado com sucesso em '{expressao}': {e}")
+
+def executar_testes_lexer():
+    print("\n>>> INICIANDO TESTES DE VALIDAÇÃO...")
+    test_entradas_validas()
+    
+    print("\n>>> INICIANDO TESTES DE REJEIÇÃO...")
+    test_entradas_invalidas()
+    
+    print("\n" + "="*50)
+    print(" TODOS OS TESTES LÉXICOS CONCLUÍDOS ")
+    print("="*50)
+
+if __name__ == "__main__":
+    executar_testes_lexer()
