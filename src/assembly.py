@@ -257,7 +257,7 @@ def gerarAssembly(tokens_por_linha):
             elif tipo == "MEM":
                 label     = mem_labels[valor]
                 prox_tipo = tokens[i + 1][0] if i + 1 < len(tokens) else None
-                if prev_tipo == "NUM" and prox_tipo == "RPAREN":
+                if prev_tipo in ("INT", "FLOAT") and prox_tipo == "RPAREN":
                     _mem_store(code, valor, label)
                 else:
                     _mem_load(code, valor, label)
@@ -281,3 +281,147 @@ def gerarAssembly(tokens_por_linha):
         _exibir_resultado(code, L)
 
     return "\n".join(_cabecalho(data) + code + _rodape())
+
+
+# Funções de teste
+
+import tempfile, os
+
+def _tok(linha_str):
+    """Tokeniza uma linha usando o lexer para gerar tokens de teste."""
+    from lexer import parseExpressao
+    tokens = []
+    parseExpressao(linha_str, tokens)
+    return tokens
+
+
+def teste_lerArquivo_valido():
+    """Testa leitura de um arquivo válido com múltiplas linhas."""
+    conteudo = "(3.14 2.0 +)\n(10 5 -)\n"
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt",
+                                      delete=False, encoding="utf-8") as f:
+        f.write(conteudo)
+        caminho = f.name
+
+    backup = sys.argv[:]
+    sys.argv = ["assembly.py", caminho]
+    try:
+        linhas = lerArquivo()
+        assert len(linhas) == 2, f"Esperado 2 linhas, obteve {len(linhas)}"
+        assert linhas[0] == "(3.14 2.0 +)", f"Linha 0 inesperada: {linhas[0]}"
+        assert linhas[1] == "(10 5 -)", f"Linha 1 inesperada: {linhas[1]}"
+        print("[PASS] teste_lerArquivo_valido")
+    finally:
+        sys.argv = backup
+        os.unlink(caminho)
+
+
+def teste_lerArquivo_arquivo_vazio():
+    """Testa leitura de um arquivo vazio."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt",
+                                      delete=False, encoding="utf-8") as f:
+        caminho = f.name
+
+    backup = sys.argv[:]
+    sys.argv = ["assembly.py", caminho]
+    try:
+        linhas = lerArquivo()
+        assert linhas == [], f"Esperado lista vazia, obteve {linhas}"
+        print("[PASS] teste_lerArquivo_arquivo_vazio")
+    finally:
+        sys.argv = backup
+        os.unlink(caminho)
+
+
+def teste_assembly_todas_operacoes():
+    """
+    Verifica que o assembly gerado a partir de um arquivo de teste
+    contém todas as operações exigidas: +, -, *, /, //, %, ^
+    e os comandos especiais: (V MEM), (MEM), (N RES).
+    Também valida a estrutura (cabeçalho, rodapé, UART, IEEE 754).
+    """
+    linhas_teste = [
+        "(5.5 1.5 +)",
+        "(12 7 -)",
+        "(3.5 6.0 *)",
+        "(18.0 5.0 /)",
+        "(25 4 //)",
+        "(25 4 %)",
+        "(3.0 5 ^)",
+        "(42.0 TOTAL)",
+        "(TOTAL)",
+        "(1 RES)",
+        "((2.5 3.0 *) (5.0 2.0 +) /)",
+    ]
+    tokens_por_linha = [_tok(l) for l in linhas_teste]
+    asm = gerarAssembly(tokens_por_linha)
+
+    # cabeçalho ARMv7
+    assert ".cpu cortex-a9" in asm, "Faltando .cpu"
+    assert ".fpu vfpv3-d16" in asm, "Faltando .fpu"
+    assert ".global _start" in asm, "Faltando .global _start"
+    assert "VMRS r0, FPEXC" in asm, "Faltando habilitação do VFP"
+
+    # rodapé
+    assert "_end:" in asm, "Faltando label _end"
+    assert "B _end" in asm, "Faltando loop infinito no rodapé"
+
+    # todas as operações aritméticas
+    assert "VADD.F64" in asm, "Faltando operação de adição (+)"
+    assert "VSUB.F64" in asm, "Faltando operação de subtração (-)"
+    assert "VMUL.F64" in asm, "Faltando operação de multiplicação (*)"
+    assert "VDIV.F64" in asm, "Faltando operação de divisão (/)"
+    assert "pow_loop_" in asm, "Faltando operação de potência (^)"
+
+    # divisão inteira (//) — trunca para inteiro e volta para double
+    assert "@ OP //" in asm, "Faltando comentário de divisão inteira"
+
+    # resto (%) — subtrai quociente truncado * divisor
+    assert "@ OP %" in asm, "Faltando comentário de resto"
+
+    # (V MEM) — armazenamento em variável
+    assert "var_TOTAL: .double 0.0" in asm, "Faltando alocação da variável TOTAL"
+    assert "Armazenar em TOTAL" in asm, "Faltando store em TOTAL"
+
+    # (MEM) — leitura de variável
+    assert "Carregar TOTAL" in asm, "Faltando load de TOTAL"
+
+    # (N RES) — referência a resultado anterior
+    assert "(1 RES)" in asm, "Faltando comentário de RES"
+    assert "result_0" in asm, "Faltando referência a resultado anterior"
+
+    # constantes com inteiros e reais (IEEE 754 64 bits)
+    assert ".double 5.5" in asm, "Faltando constante real 5.5"
+    assert ".double 12" in asm, "Faltando constante inteira 12"
+    assert ".float" not in asm, "Não deve usar .float (32 bits)"
+
+    # saída via JTAG UART
+    assert "0xFF201000" in asm, "Faltando endereço JTAG UART"
+    assert "0x2E" in asm, "Faltando impressão do ponto decimal"
+    assert "0x0A" in asm, "Faltando impressão do newline"
+
+    print("[PASS] teste_assembly_todas_operacoes")
+
+
+if __name__ == "__main__":
+    testes = [
+        teste_lerArquivo_valido,
+        teste_lerArquivo_arquivo_vazio,
+        teste_assembly_todas_operacoes,
+    ]
+
+    falhas = 0
+    for teste in testes:
+        _pow_count = 0
+        try:
+            teste()
+        except AssertionError as e:
+            print(f"[FAIL] {teste.__name__}: {e}")
+            falhas += 1
+        except Exception as e:
+            print(f"[ERRO] {teste.__name__}: {type(e).__name__}: {e}")
+            falhas += 1
+
+    print(f"\n{len(testes) - falhas}/{len(testes)} testes passaram.")
+    if falhas:
+        sys.exit(1)
