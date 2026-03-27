@@ -610,10 +610,10 @@ _uart_dot_6:
     LDR  r0, =val_14
     VLDR d0, [r0]
     VPUSH {d0}
-    @ Carregar ACUM
+    @ Armazenar em ACUM
+    VPOP  {d0}
     LDR   r1, =var_ACUM
-    VLDR  d0, [r1]
-    VPUSH {d0}
+    VSTR  d0, [r1]
     LDR   r1, =result_7
     VSTR  d0, [r1]
     @ Exibir resultado via JTAG UART (1 casa decimal)
