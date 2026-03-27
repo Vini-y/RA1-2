@@ -1,3 +1,11 @@
+# Grupo no Canvas: RA1 2
+
+# Integrantes (ordem alfabética) e GitHub:
+# - Gabriel Vidal Schneider (@Gabiru1089)
+# - Lucca Fabricio Magalhães (@luccafm1)
+# - Mohamad Kassem Diab (@Mo1409)
+# - Vinícius Yamamoto Borges (@Vini-y)
+
 from typing import Iterable
 
 
