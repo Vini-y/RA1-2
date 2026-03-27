@@ -1,4 +1,11 @@
-# Leitura de arquivo e gerador de Assembly ARMv7
+# Grupo no Canvas: RA1 2
+
+# Integrantes (ordem alfabética) e GitHub:
+# - Gabriel Vidal Schneider (@Gabiru1089)
+# - Lucca Fabricio Magalhães (@luccafm1)
+# - Mohamad Kassem Diab (@Mo1409)
+# - Vinícius Yamamoto Borges (@Vini-y)
+
 
 import sys
 
@@ -28,7 +35,7 @@ def lerArquivo():
     return linhas
 
 def _cabecalho(data):
-    linhas = [".global _start", ".data"]
+    linhas = [".cpu cortex-a9", ".fpu vfpv3-d16", ".global _start", ".data"]
     linhas.extend(data)
     linhas += ["", ".text", "_start:"]
     linhas += ["    @ Habilitar VFP",
@@ -55,36 +62,366 @@ def _op_sub(code):
     code.append("    VSUB.F64 d2, d0, d1")
     code.append("    VPUSH {d2}")
 
+def _op_mul(code):
+    code.append("    @ OP *")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VMUL.F64 d2, d0, d1")
+    code.append("    VPUSH {d2}")
+
+def _op_div(code):
+    code.append("    @ OP /")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VDIV.F64 d2, d0, d1")
+    code.append("    VPUSH {d2}")
+
+def _op_floordiv(code):
+    code.append("    @ OP //")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VDIV.F64 d2, d0, d1")
+    code.append("    VCVT.S32.F64 s4, d2")
+    code.append("    VCVT.F64.S32 d2, s4")
+    code.append("    VPUSH {d2}")
+
+def _op_mod(code):
+    code.append("    @ OP %")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VDIV.F64 d2, d0, d1")
+    code.append("    VCVT.S32.F64 s4, d2")
+    code.append("    VCVT.F64.S32 d2, s4")
+    code.append("    VMUL.F64 d2, d2, d1")
+    code.append("    VSUB.F64 d2, d0, d2")
+    code.append("    VPUSH {d2}")
+
+_pow_count = 0
+
+def _op_pow(code):
+    global _pow_count
+    loop_label = f"pow_loop_{_pow_count}"
+    done_label = f"pow_done_{_pow_count}"
+    _pow_count += 1
+    code.append("    @ OP ^")
+    code.append("    VPOP  {d1}")
+    code.append("    VPOP  {d0}")
+    code.append("    VCVT.S32.F64 s2, d1")
+    code.append("    VMOV  r0, s2")
+    code.append("    VMOV.F64 d2, d0")
+    code.append("    SUBS  r0, r0, #1")
+    code.append(f"    BEQ   {done_label}")
+    code.append(f"{loop_label}:")
+    code.append("    VMUL.F64 d2, d2, d0")
+    code.append("    SUBS  r0, r0, #1")
+    code.append(f"    BNE   {loop_label}")
+    code.append(f"{done_label}:")
+    code.append("    VPUSH {d2}")
+
 def _emit_num(code, valor, label):
     code.append(f"    @ Carregar {valor}")
     code.append(f"    LDR  r0, ={label}")
     code.append(f"    VLDR d0, [r0]")
     code.append(f"    VPUSH {{d0}}")
 
+def _mem_store(code, nome, label):
+    code.append(f"    @ Armazenar em {nome}")
+    code.append(f"    VPOP  {{d0}}")
+    code.append(f"    LDR   r1, ={label}")
+    code.append(f"    VSTR  d0, [r1]")
+
+def _mem_load(code, nome, label):
+    code.append(f"    @ Carregar {nome}")
+    code.append(f"    LDR   r1, ={label}")
+    code.append(f"    VLDR  d0, [r1]")
+    code.append(f"    VPUSH {{d0}}")
+
 OP_HANDLERS = {
     "+": _op_add,
     "-": _op_sub,
+    "*": _op_mul,
+    "/": _op_div,
+    "//": _op_floordiv,
+    "%": _op_mod,
+    "^": _op_pow,
 }
 
 INDENT = "    "
 
-def gerarAssembly(tokens):
-    data, code = [], []
-    num_labels = {}
+def _is_store(tokens):
+    sig = [(t, v) for t, v, _ in tokens if t not in ("LPAREN", "RPAREN")]
+    return len(sig) == 2 and sig[0][0] in ("INT", "FLOAT") and sig[1][0] == "MEM"
+
+def _exibir_resultado(code, L):
+    code.append(f"    @ Exibir resultado via JTAG UART (1 casa decimal)")
+    code.append(f"    VMOV.F64 d3, d0")
+    code.append(f"    LDR   r5, =0xFF201000")
+    code.append(f"    VCMP.F64 d3, #0")
+    code.append(f"    VMRS  APSR_nzcv, FPSCR")
+    code.append(f"    BGE   _uart_pos_{L}")
+    code.append(f"    MOV   r0, #0x2D")
+    code.append(f"    STR   r0, [r5]")
+    code.append(f"    VNEG.F64 d3, d3")
+    code.append(f"_uart_pos_{L}:")
+    code.append(f"    VCVT.S32.F64 s4, d3")
+    code.append(f"    VMOV  r4, s4")
+    code.append(f"    CMP   r4, #0")
+    code.append(f"    BNE   _uart_conv_{L}")
+    code.append(f"    MOV   r0, #0x30")
+    code.append(f"    STR   r0, [r5]")
+    code.append(f"    B     _uart_dot_{L}")
+    code.append(f"_uart_conv_{L}:")
+    code.append(f"    MOV   r6, #0")
+    code.append(f"    LDR   r9, =0xCCCCCCCD")
+    code.append(f"_uart_loop_{L}:")
+    code.append(f"    CMP   r4, #0")
+    code.append(f"    BEQ   _uart_print_{L}")
+    code.append(f"    UMULL r0, r1, r4, r9")
+    code.append(f"    LSR   r1, r1, #3")
+    code.append(f"    MOV   r0, #10")
+    code.append(f"    MUL   r2, r1, r0")
+    code.append(f"    SUB   r2, r4, r2")
+    code.append(f"    MOV   r4, r1")
+    code.append(f"    ADD   r2, r2, #0x30")
+    code.append(f"    PUSH  {{r2}}")
+    code.append(f"    ADD   r6, r6, #1")
+    code.append(f"    B     _uart_loop_{L}")
+    code.append(f"_uart_print_{L}:")
+    code.append(f"    CMP   r6, #0")
+    code.append(f"    BEQ   _uart_dot_{L}")
+    code.append(f"    POP   {{r0}}")
+    code.append(f"    STR   r0, [r5]")
+    code.append(f"    SUB   r6, r6, #1")
+    code.append(f"    B     _uart_print_{L}")
+    code.append(f"_uart_dot_{L}:")
+    code.append(f"    MOV   r0, #0x2E")
+    code.append(f"    STR   r0, [r5]")
+    code.append(f"    VCVT.F64.S32 d1, s4")
+    code.append(f"    VSUB.F64 d1, d3, d1")
+    code.append(f"    MOV   r0, #10")
+    code.append(f"    VMOV  s8, r0")
+    code.append(f"    VCVT.F64.S32 d4, s8")
+    code.append(f"    VMUL.F64 d1, d1, d4")
+    code.append(f"    VCVT.S32.F64 s4, d1")
+    code.append(f"    VMOV  r0, s4")
+    code.append(f"    ADD   r0, r0, #0x30")
+    code.append(f"    STR   r0, [r5]")
+    code.append(f"    MOV   r0, #0x0A")
+    code.append(f"    STR   r0, [r5]")
+
+def gerarAssembly(tokens_por_linha):
+    data, code  = [], []
+    num_labels  = {}
+    mem_labels  = {}
+    res_labels  = []
     label_count = 0
 
-    for i, (tipo, valor, _) in enumerate(tokens):
-        if tipo == "NUM":
-            label = f"val_{label_count}"
-            num_labels[i] = label
-            data += [f"{INDENT}.align 3", f"{INDENT}{label}: .double {valor}"]
-            label_count += 1
+    for L in range(len(tokens_por_linha)):
+        label = f"result_{L}"
+        res_labels.append(label)
+        data += [f"{INDENT}.align 3", f"{INDENT}{label}: .double 0.0"]
 
-    for i, (tipo, valor, _) in enumerate(tokens):
-        if tipo == "NUM":
-            _emit_num(code, valor, num_labels[i])
-        elif tipo == "OP":
-            if valor in OP_HANDLERS:
-                OP_HANDLERS[valor](code)
+    for L, tokens in enumerate(tokens_por_linha):
+        for i, (tipo, valor, _) in enumerate(tokens):
+            if tipo in ("INT", "FLOAT"):
+                prox = tokens[i + 1][0] if i + 1 < len(tokens) else None
+                if prox == "RES":
+                    num_labels[(L, i)] = None
+                else:
+                    label = f"val_{label_count}"
+                    num_labels[(L, i)] = label
+                    data += [f"{INDENT}.align 3", f"{INDENT}{label}: .double {valor}"]
+                    label_count += 1
+            elif tipo == "MEM":
+                if valor not in mem_labels:
+                    label = f"var_{valor}"
+                    mem_labels[valor] = label
+                    data += [f"{INDENT}.align 3", f"{INDENT}{label}: .double 0.0"]
+
+    for L, tokens in enumerate(tokens_por_linha):
+        prev_tipo = None
+        res_n     = None
+
+        for i, (tipo, valor, _) in enumerate(tokens):
+            if tipo in ("INT", "FLOAT"):
+                prox = tokens[i + 1][0] if i + 1 < len(tokens) else None
+                if prox == "RES":
+                    res_n = valor
+                else:
+                    _emit_num(code, valor, num_labels[(L, i)])
+                    prev_tipo = tipo
+            elif tipo == "OP":
+                if valor in OP_HANDLERS:
+                    OP_HANDLERS[valor](code)
+                prev_tipo = tipo
+            elif tipo == "MEM":
+                label     = mem_labels[valor]
+                prox_tipo = tokens[i + 1][0] if i + 1 < len(tokens) else None
+                if prev_tipo in ("INT", "FLOAT") and prox_tipo == "RPAREN":
+                    _mem_store(code, valor, label)
+                else:
+                    _mem_load(code, valor, label)
+                prev_tipo = tipo
+            elif tipo == "RES":
+                target = L - int(res_n)
+                code.append(f"    @ ({res_n} RES)")
+                code.append(f"    LDR   r1, ={res_labels[target]}")
+                code.append(f"    VLDR  d0, [r1]")
+                code.append(f"    VPUSH {{d0}}")
+                res_n     = None
+                prev_tipo = tipo
+
+        if _is_store(tokens):
+            code.append(f"    LDR   r1, ={res_labels[L]}")
+            code.append(f"    VSTR  d0, [r1]")
+        else:
+            code.append(f"    VPOP  {{d0}}")
+            code.append(f"    LDR   r1, ={res_labels[L]}")
+            code.append(f"    VSTR  d0, [r1]")
+        _exibir_resultado(code, L)
 
     return "\n".join(_cabecalho(data) + code + _rodape())
+
+
+# Funções de teste
+
+import tempfile, os
+
+def _tok(linha_str):
+    """Tokeniza uma linha usando o lexer para gerar tokens de teste."""
+    from lexer import parseExpressao
+    tokens = []
+    parseExpressao(linha_str, tokens)
+    return tokens
+
+
+def teste_lerArquivo_valido():
+    """Testa leitura de um arquivo válido com múltiplas linhas."""
+    conteudo = "(3.14 2.0 +)\n(10 5 -)\n"
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt",
+                                      delete=False, encoding="utf-8") as f:
+        f.write(conteudo)
+        caminho = f.name
+
+    backup = sys.argv[:]
+    sys.argv = ["assembly.py", caminho]
+    try:
+        linhas = lerArquivo()
+        assert len(linhas) == 2, f"Esperado 2 linhas, obteve {len(linhas)}"
+        assert linhas[0] == "(3.14 2.0 +)", f"Linha 0 inesperada: {linhas[0]}"
+        assert linhas[1] == "(10 5 -)", f"Linha 1 inesperada: {linhas[1]}"
+        print("[PASS] teste_lerArquivo_valido")
+    finally:
+        sys.argv = backup
+        os.unlink(caminho)
+
+
+def teste_lerArquivo_arquivo_vazio():
+    """Testa leitura de um arquivo vazio."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt",
+                                      delete=False, encoding="utf-8") as f:
+        caminho = f.name
+
+    backup = sys.argv[:]
+    sys.argv = ["assembly.py", caminho]
+    try:
+        linhas = lerArquivo()
+        assert linhas == [], f"Esperado lista vazia, obteve {linhas}"
+        print("[PASS] teste_lerArquivo_arquivo_vazio")
+    finally:
+        sys.argv = backup
+        os.unlink(caminho)
+
+
+def teste_assembly_todas_operacoes():
+    """
+    Verifica que o assembly gerado a partir de um arquivo de teste
+    contém todas as operações exigidas: +, -, *, /, //, %, ^
+    e os comandos especiais: (V MEM), (MEM), (N RES).
+    Também valida a estrutura (cabeçalho, rodapé, UART, IEEE 754).
+    """
+    linhas_teste = [
+        "(5.5 1.5 +)",
+        "(12 7 -)",
+        "(3.5 6.0 *)",
+        "(18.0 5.0 /)",
+        "(25 4 //)",
+        "(25 4 %)",
+        "(3.0 5 ^)",
+        "(42.0 TOTAL)",
+        "(TOTAL)",
+        "(1 RES)",
+        "((2.5 3.0 *) (5.0 2.0 +) /)",
+    ]
+    tokens_por_linha = [_tok(l) for l in linhas_teste]
+    asm = gerarAssembly(tokens_por_linha)
+
+    # cabeçalho ARMv7
+    assert ".cpu cortex-a9" in asm, "Faltando .cpu"
+    assert ".fpu vfpv3-d16" in asm, "Faltando .fpu"
+    assert ".global _start" in asm, "Faltando .global _start"
+    assert "VMRS r0, FPEXC" in asm, "Faltando habilitação do VFP"
+
+    # rodapé
+    assert "_end:" in asm, "Faltando label _end"
+    assert "B _end" in asm, "Faltando loop infinito no rodapé"
+
+    # todas as operações aritméticas
+    assert "VADD.F64" in asm, "Faltando operação de adição (+)"
+    assert "VSUB.F64" in asm, "Faltando operação de subtração (-)"
+    assert "VMUL.F64" in asm, "Faltando operação de multiplicação (*)"
+    assert "VDIV.F64" in asm, "Faltando operação de divisão (/)"
+    assert "pow_loop_" in asm, "Faltando operação de potência (^)"
+
+    # divisão inteira (//) — trunca para inteiro e volta para double
+    assert "@ OP //" in asm, "Faltando comentário de divisão inteira"
+
+    # resto (%) — subtrai quociente truncado * divisor
+    assert "@ OP %" in asm, "Faltando comentário de resto"
+
+    # (V MEM) — armazenamento em variável
+    assert "var_TOTAL: .double 0.0" in asm, "Faltando alocação da variável TOTAL"
+    assert "Armazenar em TOTAL" in asm, "Faltando store em TOTAL"
+
+    # (MEM) — leitura de variável
+    assert "Carregar TOTAL" in asm, "Faltando load de TOTAL"
+
+    # (N RES) — referência a resultado anterior
+    assert "(1 RES)" in asm, "Faltando comentário de RES"
+    assert "result_0" in asm, "Faltando referência a resultado anterior"
+
+    # constantes com inteiros e reais (IEEE 754 64 bits)
+    assert ".double 5.5" in asm, "Faltando constante real 5.5"
+    assert ".double 12" in asm, "Faltando constante inteira 12"
+    assert ".float" not in asm, "Não deve usar .float (32 bits)"
+
+    # saída via JTAG UART
+    assert "0xFF201000" in asm, "Faltando endereço JTAG UART"
+    assert "0x2E" in asm, "Faltando impressão do ponto decimal"
+    assert "0x0A" in asm, "Faltando impressão do newline"
+
+    print("[PASS] teste_assembly_todas_operacoes")
+
+
+if __name__ == "__main__":
+    testes = [
+        teste_lerArquivo_valido,
+        teste_lerArquivo_arquivo_vazio,
+        teste_assembly_todas_operacoes,
+    ]
+
+    falhas = 0
+    for teste in testes:
+        _pow_count = 0
+        try:
+            teste()
+        except AssertionError as e:
+            print(f"[FAIL] {teste.__name__}: {e}")
+            falhas += 1
+        except Exception as e:
+            print(f"[ERRO] {teste.__name__}: {type(e).__name__}: {e}")
+            falhas += 1
+
+    print(f"\n{len(testes) - falhas}/{len(testes)} testes passaram.")
+    if falhas:
+        sys.exit(1)
