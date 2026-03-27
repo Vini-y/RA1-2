@@ -312,7 +312,8 @@ def executarExpressao(tokens: list, memoria: dict, historico: list) -> float:
 def testeExecutar():
     histTest = []
     memTest = {}
-    stringTeste = ["(2 2 +)", "(100 SOMA)", "(6 7 *)", "(1 RES)", "((2 2 +) 4 *)"]
+    stringTeste = ["(2 2 +)", "(100 SOMA)", "(6 7 *)", "(1 RES)", "((2 2 +) 4 *)", "(5 4 /)",
+                   "(8 3 //)", "(8 3 %)", "(2 3 ^)"]
     
     for i in range(len(stringTeste)):
         tokens = []
