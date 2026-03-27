@@ -1,5 +1,5 @@
 # Executor de expressões RPN e gerenciamento de memória
-from lexer import parseExpressao, LexError
+from lexer import parseExpressao
 
 """
 executarExpressao.py
@@ -16,7 +16,7 @@ Formato do Token esperado: tupla (tipo, valor, posição)
     ("MEM", "VAR", 3)
 
 Depende de:
-    lexer.py -> parseExpressao, LexError
+    lexer.py -> parseExpressao
 
 """
 
@@ -159,7 +159,7 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
             )
         return historico[idx]
  
-    # ── (INT|FLOAT MEM) — escrita em variável ────────────────────
+    # (INT|FLOAT MEM) — escrita em variável
     if (len(interior) == 2 and
             eh_numero(interior[0]) and
             tipo(interior[1]) == T_MEM):
@@ -168,11 +168,11 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
         memoria[nome] = v
         return v
  
-    # ── Aritmética RPN com pilha ──────────────────────────────────
+    # Aritmética RPN com pilha
     # Para cada token do interior:
-    #   INT ou FLOAT - converte para float e empilha
-    #   OP - desempilha b e a, aplica operador, empilha resultado
-    #   MEM - lê variável da memória e empilha
+    # INT ou FLOAT - converte para float e empilha
+    # OP - desempilha b e a, aplica operador, empilha resultado
+    # MEM - lê variável da memória e empilha
     pilha = []
  
     for tok in interior:
@@ -189,7 +189,7 @@ def _avaliar_expressao_plana(tokens: list, memoria: dict, historico: list) -> fl
                     f"Operador '{v}' requer 2 operandos, "
                     f"pilha tem {len(pilha)}"
                 )
-            # Em RPN: topo da pilha é b, segundo elemento é a → (a b op)
+            # Em RPN: topo da pilha é b, segundo elemento é a - (a b op)
             b = pilha.pop()
             a = pilha.pop()
             pilha.append(_aplicar_operador(v, a, b))
@@ -307,3 +307,20 @@ def executarExpressao(tokens: list, memoria: dict, historico: list) -> float:
     historico.insert(0, resultado)
  
     return resultado
+
+
+def testeExecutar():
+    histTest = []
+    memTest = {}
+    stringTeste = ["(2 2 +)", "(100 SOMA)", "(6 7 *)", "(1 RES)", "((2 2 +) 4 *)"]
+    
+    for i in range(len(stringTeste)):
+        tokens = []
+        parseExpressao(stringTeste[i], tokens)
+        resultado = executarExpressao(tokens, memTest, histTest)
+        print(f"Resultado{i}: {resultado}")
+    print(f"Histórico: {histTest}")
+    print(f"Memoria: {memTest}")
+
+if __name__ == "__main__":
+    testeExecutar()
