@@ -143,7 +143,7 @@ INDENT = "    "
 
 def _is_store(tokens):
     sig = [(t, v) for t, v, _ in tokens if t not in ("LPAREN", "RPAREN")]
-    return len(sig) == 2 and sig[0][0] == "NUM" and sig[1][0] == "MEM"
+    return len(sig) == 2 and sig[0][0] in ("INT", "FLOAT") and sig[1][0] == "MEM"
 
 def _div10(code):
     code.append(f"    UMULL r0, r1, r4, r9")
@@ -200,7 +200,7 @@ def gerarAssembly(tokens_por_linha):
 
     for L, tokens in enumerate(tokens_por_linha):
         for i, (tipo, valor, _) in enumerate(tokens):
-            if tipo == "NUM":
+            if tipo in ("INT", "FLOAT"):
                 prox = tokens[i + 1][0] if i + 1 < len(tokens) else None
                 if prox == "RES":
                     num_labels[(L, i)] = None
@@ -220,7 +220,7 @@ def gerarAssembly(tokens_por_linha):
         res_n     = None
 
         for i, (tipo, valor, _) in enumerate(tokens):
-            if tipo == "NUM":
+            if tipo in ("INT", "FLOAT"):
                 prox = tokens[i + 1][0] if i + 1 < len(tokens) else None
                 if prox == "RES":
                     res_n = valor
