@@ -6,7 +6,6 @@
 # - Mohamad Kassem Diab (@Mo1409)
 # - Vinícius Yamamoto Borges (@Vini-y)
 
-# Grupo no Canvas: RA1 2
 
 import sys
 
