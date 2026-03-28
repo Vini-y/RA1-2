@@ -79,7 +79,9 @@ O programa gera:
 
 ```bash
 python src/lexer.py     # testes do parseExpressao 
+python src/executor.py  # testes do executarExpressao
 python src/assembly.py  # testes do gerador de Assembly e leitura de arquivo
+python src/display.py   # testes do exibir resultados
 ```
 
 ## Como testar no CPUlator

@@ -37,3 +37,63 @@ def exibirResultados(resultados: Iterable[float | None] | None) -> list[str]:
         print(linha)
 
     return linhas
+
+
+# --- Funções de teste ---
+
+def teste_exibirResultados():
+    """
+    Testa exibirResultados com o fluxo completo do programa:
+    tokenização, execução e exibição dos resultados.
+    Verifica formatação com 1 casa decimal, lista vazia e None.
+    """
+    from lexer import parseExpressao
+    from executor import executarExpressao
+
+    # Testa fluxo completo: tokenizar -> executar -> exibir
+    expressoes = [
+        "(5.5 1.5 +)",
+        "(12 7 -)",
+        "(3.5 6.0 *)",
+        "(18.0 5.0 /)",
+        "(25 4 //)",
+        "(25 4 %)",
+        "(3.0 5 ^)",
+    ]
+    memoria = {}
+    historico = []
+    resultados = []
+
+    for expr in expressoes:
+        tokens = []
+        parseExpressao(expr, tokens)
+        res = executarExpressao(tokens, memoria, historico)
+        resultados.append(res)
+
+    linhas = exibirResultados(resultados)
+
+    assert linhas[0] == "Resultados:", f"Cabeçalho inesperado: {linhas[0]}"
+    assert len(linhas) == len(resultados) + 1, "Número de linhas não corresponde"
+
+    # Verifica formatação com 1 casa decimal
+    assert "[01] 7.0" in linhas[1], f"Resultado da adição inesperado: {linhas[1]}"
+    assert "[02] 5.0" in linhas[2], f"Resultado da subtração inesperado: {linhas[2]}"
+    assert "[03] 21.0" in linhas[3], f"Resultado da multiplicação inesperado: {linhas[3]}"
+    assert "[04] 3.6" in linhas[4], f"Resultado da divisão inesperado: {linhas[4]}"
+    assert "[05] 6.0" in linhas[5], f"Resultado da divisão inteira inesperado: {linhas[5]}"
+    assert "[06] 1.0" in linhas[6], f"Resultado do resto inesperado: {linhas[6]}"
+    assert "[07] 243.0" in linhas[7], f"Resultado da potência inesperado: {linhas[7]}"
+
+    # Testa lista vazia
+    linhas_vazio = exibirResultados([])
+    assert linhas_vazio == [], "Lista vazia deve retornar []"
+
+    # Testa None
+    linhas_none = exibirResultados(None)
+    assert linhas_none == [], "None deve retornar []"
+
+    print("[PASS] teste_exibirResultados")
+
+
+if __name__ == "__main__":
+    teste_exibirResultados()
