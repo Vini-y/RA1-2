@@ -7,6 +7,7 @@
 # - Vinícius Yamamoto Borges (@Vini-y)
 
 import sys
+import os
 from lexer import parseExpressao, LexError
 from assembly import lerArquivo, gerarAssembly
 from display import exibirResultados
@@ -49,7 +50,7 @@ def executarLinhas(tokens_por_linha):
     historico = []
     resultados = []
 
-    for numero_linha, tokens in enumerate(tokens_por_linha, start=0):
+    for numero_linha, tokens in enumerate(tokens_por_linha, start=1):
         try:
             resultado = executarExpressao(tokens, memoria, historico)
             resultados.append(resultado)
@@ -99,6 +100,224 @@ def salvarAssembly(codigo_assembly, caminho="assembly/assembly.s"):
         sys.exit(1)
 
 
+# Testes
+def _teste_deve_falhar(nome_erro, linhas):
+    print(f"  Esperado: {nome_erro}")
+    try:
+        exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+        print("  [FALHOU] O programa não gerou erro quando deveria.")
+        sys.exit(1)
+    except SystemExit:
+        print("  [OK] O programa gerou erro como esperado.")
+
+
+def teste_memoria():
+    """(V MEM) armazena, (MEM) recupera e sobrescreve o valor."""
+    linhas = [
+        "(100.0 SOMA)",
+        "(SOMA)",
+        "(200.0 SOMA)",
+        "(SOMA)",
+        "(50.0 BASE)",
+        "(BASE)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_res():
+    """(N RES) retorna resultados de linhas anteriores."""
+    linhas = [
+        "(7.0 3.0 +)",
+        "(4.0 2.0 *)",
+        "(1 RES)",
+        "(2 RES)",
+        "(3.0 3.0 ^)",
+        "(1 RES)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_expressao():
+    """Aninhamento, operações e uso de memória."""
+    linhas = [
+        "((1.5 2.0 +) (3.0 4.0 +) *)",
+        "(10.0 BASE)",
+        "((BASE 2.0 *) (5.0 1.0 -) +)",
+        "((BASE 3.0 /) (2.0 4 ^) +)",
+        "((9.0 3.0 //) (10.0 3.0 %) +)",
+        "(BASE)",
+        "((BASE 2 ^) (1 RES) -)",
+        "(1 RES)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_divisao_por_zero():
+    """Testa divisão por zero."""
+    linhas = [
+        "(10.0 0.0 /)",
+    ]
+    _teste_deve_falhar("divisão por zero", linhas)
+
+
+def teste_memoria_nao_inicializada():
+    """Testa memória não inicializada."""
+    linhas = [
+        "(MEM)",
+    ]
+    _teste_deve_falhar("memória não inicializada", linhas)
+
+
+def teste_res_invalido():
+    """Testa RES inválido."""
+    linhas = [
+        "(1 RES)",
+    ]
+    _teste_deve_falhar("RES inválido", linhas)
+
+
+def teste_expressao_invalida():
+    """Testa expressão inválida."""
+    linhas = [
+        "(10.0 5.0 + 3.0)",
+    ]
+    _teste_deve_falhar("expressão inválida", linhas)
+
+
+def teste_erro_lexico():
+    """Testa erro léxico."""
+    linhas = [
+        "(3.14.5 2.0 +)",
+    ]
+    _teste_deve_falhar("erro léxico", linhas)
+
+
+def teste_operacoes_basicas():
+    """Testa operações básicas isoladas."""
+    linhas = [
+        "(3.0 2.0 +)",
+        "(10.0 5.0 -)",
+        "(4.0 2.0 *)",
+        "(9.0 3.0 /)",
+        "(10.0 3.0 //)",
+        "(10.0 3.0 %)",
+        "(2.0 3.0 ^)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_memoria_em_expressao():
+    """Testa uso de memória dentro de expressão."""
+    linhas = [
+        "(10.0 BASE)",
+        "((BASE 2.0 *) (3.0 1.0 +) +)",
+        "(BASE)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_res_em_expressao():
+    """Testa uso de RES dentro de expressão aninhada."""
+    linhas = [
+        "(5.0 5.0 +)",
+        "((1 RES) 2.0 *)",
+        "((1 RES) (2 RES) +)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_linhas_vazias():
+    """Testa se linhas vazias são ignoradas."""
+    linhas = [
+        "(3.0 2.0 +)",
+        "",
+        "   ",
+        "(4.0 1.0 -)",
+    ]
+    exibirResultados(executarLinhas(tokenizarLinhas(linhas)))
+
+
+def teste_divisao_inteira_por_zero():
+    """Testa divisão inteira por zero."""
+    linhas = [
+        "(10.0 0.0 //)",
+    ]
+    _teste_deve_falhar("divisão inteira por zero", linhas)
+
+
+def teste_modulo_por_zero():
+    """Testa resto por zero."""
+    linhas = [
+        "(10.0 0.0 %)",
+    ]
+    _teste_deve_falhar("resto por zero", linhas)
+
+
+def teste_res_zero():
+    """Testa RES com zero."""
+    linhas = [
+        "(0 RES)",
+    ]
+    _teste_deve_falhar("RES zero", linhas)
+
+
+def teste_res_negativo():
+    """Testa RES negativo."""
+    linhas = [
+        "(-1 RES)",
+    ]
+    _teste_deve_falhar("RES negativo", linhas)
+
+
+def teste_memoria_nao_inicializada_no_meio():
+    """Testa memória não inicializada no meio do fluxo."""
+    linhas = [
+        "(7.0 3.0 +)",
+        "(VALOR)",
+        "(4.0 2.0 *)",
+    ]
+    _teste_deve_falhar("memória não inicializada no meio", linhas)
+
+
+def teste_erro_lexico_no_meio():
+    """Testa erro léxico no meio do fluxo."""
+    linhas = [
+        "(7.0 3.0 +)",
+        "(3.14.5 2.0 +)",
+        "(4.0 2.0 *)",
+    ]
+    _teste_deve_falhar("erro léxico no meio", linhas)
+
+def executarTestes():
+    print("Executando testes...\n")
+
+    for nome, fn in [
+        ("Comandos de memória", teste_memoria),
+        ("Histórico com RES", teste_res),
+        ("Expressão complexa", teste_expressao),
+        ("Operações básicas", teste_operacoes_basicas),
+        ("Memória em expressão", teste_memoria_em_expressao),
+        ("RES em expressão", teste_res_em_expressao),
+        ("Linhas vazias", teste_linhas_vazias),
+        ("Divisão por zero", teste_divisao_por_zero),
+        ("Divisão inteira por zero", teste_divisao_inteira_por_zero),
+        ("Módulo por zero", teste_modulo_por_zero),
+        ("Memória não inicializada", teste_memoria_nao_inicializada),
+        ("Memória não inicializada no meio", teste_memoria_nao_inicializada_no_meio),
+        ("RES inválido", teste_res_invalido),
+        ("RES zero", teste_res_zero),
+        ("RES negativo", teste_res_negativo),
+        ("Expressão inválida", teste_expressao_invalida),
+        ("Erro léxico", teste_erro_lexico),
+        ("Erro léxico no meio", teste_erro_lexico_no_meio),
+    ]:
+        print(f"[TESTE] {nome}")
+        fn()
+        print()
+
+    print("Todos os testes passaram.")
+
+    
 def main():
     linhas = lerArquivo()
 
@@ -116,4 +335,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        executarTestes()
+    else:
+        main()
